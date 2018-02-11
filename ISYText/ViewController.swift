@@ -17,17 +17,35 @@ class ViewController: UIViewController, ARSCNViewDelegate {
     override func viewDidLoad() {
         super.viewDidLoad()
         
+        
         // Set the view's delegate
         sceneView.delegate = self
         
         // Show statistics such as fps and timing information
         sceneView.showsStatistics = true
         
+        // Debug Infos
+        sceneView.debugOptions = [ARSCNDebugOptions.showFeaturePoints] //, ARSCNDebugOptions.showWorldOrigin]
+        
         // Create a new scene
-        let scene = SCNScene(named: "art.scnassets/ship.scn")!
+        //let scene = SCNScene(named: "art.scnassets/ship.scn")!
+        let scene = SCNScene()
         
         // Set the scene to the view
         sceneView.scene = scene
+        
+        let textGeometry = SCNText(string: "Hello World", extrusionDepth: 1.0)
+        textGeometry.firstMaterial?.diffuse.contents = UIColor.green
+        
+        let textNode = SCNNode(geometry: textGeometry)
+        textNode.position = SCNVector3(0,0.1,-40)
+        textNode.scale = SCNVector3(0.5,0.5,0.5)
+        
+        scene.rootNode.addChildNode(textNode)
+        
+        // Default lighting
+        sceneView.autoenablesDefaultLighting = true
+        
     }
     
     override func viewWillAppear(_ animated: Bool) {
@@ -35,6 +53,7 @@ class ViewController: UIViewController, ARSCNViewDelegate {
         
         // Create a session configuration
         let configuration = ARWorldTrackingConfiguration()
+        configuration.planeDetection = .horizontal
 
         // Run the view's session
         sceneView.session.run(configuration)
@@ -54,27 +73,137 @@ class ViewController: UIViewController, ARSCNViewDelegate {
 
     // MARK: - ARSCNViewDelegate
     
+    func createPlaneNode(anchor: ARPlaneAnchor) -> SCNNode {
+        let plane = SCNPlane(width: CGFloat(anchor.extent.x), height: CGFloat(anchor.extent.z))
+        
+        let gridImage = UIImage(named: "tron_grid")
+        let showPlane = SCNMaterial()
+        showPlane.diffuse.contents = gridImage
+        showPlane.transparency = 0.1
+        showPlane.isDoubleSided = true
+        
+        plane.materials = [showPlane]
+        let planeNode = SCNNode(geometry: plane)
+        planeNode.position = SCNVector3Make(anchor.center.x, anchor.center.y, anchor.center.z)
+        planeNode.transform = SCNMatrix4MakeRotation(-Float.pi / 2, 1, 0, 0)
+        
+        return planeNode
+    }
+
+    func createBoxNode(anchor: ARPlaneAnchor) -> SCNNode {
+        let box = SCNBox()
+
+        let showBox = SCNMaterial()
+        showBox.diffuse.contents = UIColor.blue
+        showBox.transparency = 0.7
+        showBox.isDoubleSided = true
+        
+        box.materials = [showBox]
+        let boxNode = SCNNode(geometry: box)
+        boxNode.position = SCNVector3Make(anchor.center.x, anchor.center.y, anchor.center.z)
+        
+        return boxNode
+    }
+    
+    func createTextNode(text: String, anchor: ARPlaneAnchor) -> SCNNode {
+        let textGeometry = SCNText(string: text, extrusionDepth: 0.1)
+        textGeometry.alignmentMode = kCAAlignmentCenter
+        
+        let showText = SCNMaterial()
+        showText.diffuse.contents = UIColor.red
+        showText.isDoubleSided = true
+        
+        textGeometry.materials = [showText]
+        let textNode = SCNNode(geometry: textGeometry)
+        textGeometry.font = UIFont.systemFont(ofSize: 1)
+        //textNode.position = SCNVector3(0.1,0.1,0.1)
+        textNode.position = SCNVector3Make(anchor.center.x, anchor.center.y, anchor.center.z)
+        //textNode.position = SCNVector3Zero
+        textNode.scale = SCNVector3Make(0.04, 0.04, 0.04)
+        
+       /*
+        // Translate so that the text node can be seen
+        let (min, max) = geometry.boundingBox
+        textNode.pivot = SCNMatrix4MakeTranslation((max.x - min.x)/2, min.y - 0.5, 0)
+        
+        // Always look at the camera
+        let node = SCNNode()
+        let billboardConstraint = SCNBillboardConstraint()
+        billboardConstraint.freeAxes = SCNBillboardAxis.Y
+        node.constraints = [billboardConstraint]
+        
+        node.addChildNode(textNode)
+        */
+        return textNode
+    }
+
 /*
     // Override to create and configure nodes for anchors added to the view's session.
     func renderer(_ renderer: SCNSceneRenderer, nodeFor anchor: ARAnchor) -> SCNNode? {
         let node = SCNNode()
-     
+        let planeNode = SCNNode()
+        let planeAnchor = anchor as? ARPlaneAnchor
+        planeNode.geometry = SCNPlane(width: CGFloat((planeAnchor?.extent.x)!), height: CGFloat((planeAnchor?.extent.z)!))
+        planeNode.position = SCNVector3((planeAnchor?.center.x)!, 0, (planeAnchor?.center.z)!)
+        planeNode.geometry?.firstMaterial?.diffuse.contents = UIColor.cyan.withAlphaComponent(0.5)
+        //planeNode.eulerAngles = SCNVector3(-Float.pi/2, 0, 0)
+        
+        node.addChildNode(planeNode)
         return node
     }
 */
     
+    func renderer(_ renderer: SCNSceneRenderer, didAdd node: SCNNode, for anchor: ARAnchor) {
+        guard let planeAnchor = anchor as? ARPlaneAnchor else { return }
+        
+        let textNode = createTextNode(text: "TestNode", anchor: planeAnchor)
+        let planeNode = createPlaneNode(anchor: planeAnchor)
+        
+        // ARKit owns the node corresponding to the anchor, so make the plane a child node.
+        node.addChildNode(planeNode)
+        sceneView.scene.rootNode.addChildNode(textNode)
+    }
+    
+    // When a detected plane is updated, make a new planeNode
+    func renderer(_ renderer: SCNSceneRenderer, didUpdate node: SCNNode, for anchor: ARAnchor) {
+        guard let planeAnchor = anchor as? ARPlaneAnchor else { return }
+        
+        // Remove existing plane nodes
+        node.enumerateChildNodes {
+            (childNode, _) in
+            childNode.removeFromParentNode()
+        }
+        
+        let planeNode = createPlaneNode(anchor: planeAnchor)
+        
+        node.addChildNode(planeNode)
+    }
+    
+    // When a detected plane is removed, remove the planeNode
+    func renderer(_ renderer: SCNSceneRenderer, didRemove node: SCNNode, for anchor: ARAnchor) {
+        guard anchor is ARPlaneAnchor else { return }
+        
+        // Remove existing plane nodes
+        node.enumerateChildNodes {
+            (childNode, _) in
+            childNode.removeFromParentNode()
+        }
+    }
+    
     func session(_ session: ARSession, didFailWithError error: Error) {
         // Present an error message to the user
-        
+        print("Session Failed")
     }
     
     func sessionWasInterrupted(_ session: ARSession) {
         // Inform the user that the session has been interrupted, for example, by presenting an overlay
-        
+        print("Session interrupted")
     }
     
     func sessionInterruptionEnded(_ session: ARSession) {
         // Reset tracking and/or remove existing anchors if consistent tracking is required
-        
+        sceneView.session.run(session.configuration!,
+                              options: [.resetTracking,
+                                        .removeExistingAnchors])
     }
 }
