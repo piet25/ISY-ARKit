@@ -13,7 +13,8 @@ import ARKit
 class ViewController: UIViewController, ARSCNViewDelegate {
 
     @IBOutlet var sceneView: ARSCNView!
-    
+    var sceneNode = SCNNode()
+   
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -34,6 +35,7 @@ class ViewController: UIViewController, ARSCNViewDelegate {
         // Set the scene to the view
         sceneView.scene = scene
         
+        /*
         let textGeometry = SCNText(string: "Hello World", extrusionDepth: 1.0)
         textGeometry.firstMaterial?.diffuse.contents = UIColor.green
         
@@ -42,10 +44,21 @@ class ViewController: UIViewController, ARSCNViewDelegate {
         textNode.scale = SCNVector3(0.5,0.5,0.5)
         
         scene.rootNode.addChildNode(textNode)
-        
+        */
         // Default lighting
         sceneView.autoenablesDefaultLighting = true
         
+        loadScene()
+    }
+    
+    func loadScene() {
+        let scene = SCNScene(named: "art.scnassets/ship.scn")
+        let childNodes = scene?.rootNode.childNodes
+        for childNode in childNodes! {
+            sceneNode.scale = SCNVector3(0.1, 0.1, 0.1)
+            sceneNode.position = SCNVector3Zero
+            sceneNode.addChildNode(childNode)
+        }
     }
     
     override func viewWillAppear(_ animated: Bool) {
@@ -156,15 +169,16 @@ class ViewController: UIViewController, ARSCNViewDelegate {
     func renderer(_ renderer: SCNSceneRenderer, didAdd node: SCNNode, for anchor: ARAnchor) {
         guard let planeAnchor = anchor as? ARPlaneAnchor else { return }
         
-        let textNode = createTextNode(text: "TestNode", anchor: planeAnchor)
         let planeNode = createPlaneNode(anchor: planeAnchor)
+        let textNode = createTextNode(text: "TestNode", anchor: planeAnchor)
         
-        // ARKit owns the node corresponding to the anchor, so make the plane a child node.
         node.addChildNode(planeNode)
         node.addChildNode(textNode)
-        
+        //node.addChildNode(sceneNode)
     }
     
+
+  /*
     // When a detected plane is updated, make a new planeNode
     func renderer(_ renderer: SCNSceneRenderer, didUpdate node: SCNNode, for anchor: ARAnchor) {
         guard let planeAnchor = anchor as? ARPlaneAnchor else { return }
@@ -174,11 +188,13 @@ class ViewController: UIViewController, ARSCNViewDelegate {
             (childNode, _) in
             childNode.removeFromParentNode()
         }
-        let textNode = createTextNode(text: "TestNode", anchor: planeAnchor)
         let planeNode = createPlaneNode(anchor: planeAnchor)
+        let textNode = createTextNode(text: "TestNode", anchor: planeAnchor)
+        
         
         node.addChildNode(planeNode)
         node.addChildNode(textNode)
+        //node.addChildNode(sceneNode)
     }
     
     // When a detected plane is removed, remove the planeNode
@@ -191,7 +207,7 @@ class ViewController: UIViewController, ARSCNViewDelegate {
             childNode.removeFromParentNode()
         }
     }
-    
+ */
     func session(_ session: ARSession, didFailWithError error: Error) {
         // Present an error message to the user
         print("Session Failed")
@@ -208,4 +224,6 @@ class ViewController: UIViewController, ARSCNViewDelegate {
                               options: [.resetTracking,
                                         .removeExistingAnchors])
     }
+ 
 }
+ 
