@@ -117,8 +117,8 @@ class ViewController: UIViewController, ARSCNViewDelegate {
         let textNode = SCNNode(geometry: textGeometry)
         textGeometry.font = UIFont.systemFont(ofSize: 1)
         //textNode.position = SCNVector3(0.1,0.1,0.1)
-        textNode.position = SCNVector3Make(anchor.center.x, anchor.center.y, anchor.center.z)
-        //textNode.position = SCNVector3Zero
+        //textNode.position = SCNVector3Make(anchor.center.x, anchor.center.y, anchor.center.z)
+        textNode.position = SCNVector3Zero
         textNode.scale = SCNVector3Make(0.04, 0.04, 0.04)
         
        /*
@@ -161,7 +161,8 @@ class ViewController: UIViewController, ARSCNViewDelegate {
         
         // ARKit owns the node corresponding to the anchor, so make the plane a child node.
         node.addChildNode(planeNode)
-        sceneView.scene.rootNode.addChildNode(textNode)
+        node.addChildNode(textNode)
+        
     }
     
     // When a detected plane is updated, make a new planeNode
@@ -173,10 +174,11 @@ class ViewController: UIViewController, ARSCNViewDelegate {
             (childNode, _) in
             childNode.removeFromParentNode()
         }
-        
+        let textNode = createTextNode(text: "TestNode", anchor: planeAnchor)
         let planeNode = createPlaneNode(anchor: planeAnchor)
         
         node.addChildNode(planeNode)
+        node.addChildNode(textNode)
     }
     
     // When a detected plane is removed, remove the planeNode
