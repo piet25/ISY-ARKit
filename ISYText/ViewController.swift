@@ -130,7 +130,7 @@ class ViewController: UIViewController, ARSCNViewDelegate {
         let textNode = SCNNode(geometry: textGeometry)
         textGeometry.font = UIFont.systemFont(ofSize: 1)
         //textNode.position = SCNVector3(0.1,0.1,0.1)
-        //textNode.position = SCNVector3Make(anchor.center.x, anchor.center.y, anchor.center.z)
+        //textNode.position = SCNVector3Make(anchor.center.x, 0, anchor.center.z)
         textNode.position = SCNVector3Zero
         textNode.scale = SCNVector3Make(0.04, 0.04, 0.04)
         
@@ -196,6 +196,7 @@ class ViewController: UIViewController, ARSCNViewDelegate {
         node.addChildNode(textNode)
         //node.addChildNode(sceneNode)
     }
+    */
     
     // When a detected plane is removed, remove the planeNode
     func renderer(_ renderer: SCNSceneRenderer, didRemove node: SCNNode, for anchor: ARAnchor) {
@@ -207,7 +208,7 @@ class ViewController: UIViewController, ARSCNViewDelegate {
             childNode.removeFromParentNode()
         }
     }
- */
+
     func session(_ session: ARSession, didFailWithError error: Error) {
         // Present an error message to the user
         print("Session Failed")
